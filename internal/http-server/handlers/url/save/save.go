@@ -1,6 +1,7 @@
 package save
 
 import (
+	"errors"
 	"github.com/go-chi/chi/v5/middleware"
 	"github.com/go-chi/render"
 	"github.com/go-playground/validator/v10"
@@ -9,6 +10,7 @@ import (
 	"url-shortener/internal/lib/api/response"
 	"url-shortener/internal/lib/logger/sl"
 	"url-shortener/internal/lib/random"
+	"url-shortener/internal/storage"
 )
 
 type URLSaver interface {
@@ -64,5 +66,28 @@ func New(log *slog.Logger, urlSaver URLSaver) http.HandlerFunc {
 		if alias == "" {
 			alias = random.NewRandomString(aliasLength)
 		}
+
+		id, err := urlSaver.SaveURL(request.URL, alias)
+
+		if errors.Is(err, storage.ErrURLExists) {
+			log.Info("URL already exists", sl.Err(err))
+
+			render.JSON(w, r, response.Error("URL already exists"))
+
+			return
+		}
+		if err != nil {
+			log.Error("failed to save URL", sl.Err(err))
+
+			render.JSON(w, r, response.Error("failed to save URL"))
+
+			return
+		}
+
+		log.Info("url added", slog.Int64("id", id))
+		render.JSON(w, r, Response{
+			Response: response.Ok(),
+			Alias:    alias,
+		})
 	}
 }
