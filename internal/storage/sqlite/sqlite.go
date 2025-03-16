@@ -41,7 +41,7 @@ func New(storagePath string) (*Storage, error) {
 func (storage *Storage) SaveURL(urlToSave string, alias string) (int64, error) {
 	const op = "storage.SaveURL"
 
-	stmt, err := storage.db.Prepare("INSERT INTO url(alias, url) VALUES(?, ?)")
+	stmt, err := storage.db.Prepare("INSERT INTO url(url, alias) VALUES(?, ?)")
 	if err != nil {
 		return 0, fmt.Errorf("%s: %w", op, err)
 	}
